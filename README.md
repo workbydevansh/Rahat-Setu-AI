@@ -417,6 +417,7 @@ Update this section with your actual hackathon team details before submission.
 | `Add name` | Frontend | App Router UI, dashboards, forms |
 | `Add name` | Backend / Firebase | Auth, Firestore, data flows |
 | `Add name` | AI / Matching | Gemini workflows, ranking logic |
+| Chhatrapal Diawan | Collaborator | General contributions |
 
 ## Key Routes
 

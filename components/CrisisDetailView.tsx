@@ -20,7 +20,7 @@ import {
   getVolunteersByCrisisId,
 } from "@/data/mock-data";
 import { requestNGONeedParsing } from "@/lib/ai-client";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, subscribeToProfileSession, type CurrentProfileSession } from "@/lib/auth";
 import { getTemplateByCrisisType } from "@/lib/disasterTemplates";
 import {
   assignVolunteerToTask,
@@ -247,6 +247,7 @@ export function CrisisDetailView({
   initialCrisis,
 }: CrisisDetailViewProps) {
   const { pushToast } = useToast();
+  const [session, setSession] = useState<CurrentProfileSession | null>(null);
   const [crisis, setCrisis] = useState<Crisis | null>(initialCrisis);
   const [isLoading, setIsLoading] = useState(!initialCrisis);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -293,6 +294,12 @@ export function CrisisDetailView({
   const [loadingMatchesTaskId, setLoadingMatchesTaskId] = useState<string | null>(null);
   const [assigningMatchKey, setAssigningMatchKey] = useState<string | null>(null);
   const [activeMatchTaskId, setActiveMatchTaskId] = useState<string | null>(null);
+
+  useEffect(() => {
+    return subscribeToProfileSession((nextSession) => {
+      setSession(nextSession);
+    });
+  }, []);
 
   useEffect(() => {
     if (initialCrisis) {
@@ -1002,6 +1009,12 @@ export function CrisisDetailView({
     : null;
   const activeTaskMatches = activeMatchTask ? matchesByTaskId[activeMatchTask.id] ?? [] : [];
 
+  const isNGO = session?.role === "ngo";
+  const isAdmin = session?.role === "admin";
+  const isVolunteer = session?.role === "volunteer";
+  const isDonor = session?.role === "donor";
+  const canManageCrisis = isNGO || isAdmin;
+
   return (
     <AppShell
       currentPath={`/crisis/${crisis.id}`}
@@ -1010,9 +1023,22 @@ export function CrisisDetailView({
       description={crisis.summary}
       actions={
         <>
-          <Button href={`/crisis/${crisis.id}#task-creator`} variant="secondary">
-            Create task
-          </Button>
+          {canManageCrisis && (
+            <Button href={`/crisis/${crisis.id}#task-creator`} variant="secondary">
+              Create task
+            </Button>
+          )}
+          {canManageCrisis && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setCrisis(prev => prev ? { ...prev, status: prev.status === 'resolved' ? 'active' : 'resolved' } : null);
+                pushToast({ title: "Supervisor Override", description: `Crisis room marked as ${crisis.status === 'resolved' ? 'active' : 'resolved'}`, tone: "warn" });
+              }}
+            >
+              {crisis.status === 'resolved' ? 'Reopen Room' : 'Close Room'}
+            </Button>
+          )}
           <Button href="/donor">Open donor board</Button>
         </>
       }
@@ -1157,7 +1183,42 @@ export function CrisisDetailView({
         errorMessage={impactLoadError}
       />
 
-      <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+      {canManageCrisis && (
+        <section className="mt-6 rounded-[32px] border border-border bg-surface p-6 shadow-[0_18px_40px_rgba(17,36,58,0.08)]">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.28em] text-command-soft/70">
+                Command Center
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-command">
+                Volunteer Roster
+              </h2>
+            </div>
+            <Badge tone="info">Active Responders</Badge>
+          </div>
+          <div className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+            {getVolunteersByCrisisId(crisis.id).map(vol => (
+              <div key={vol.id} className="rounded-[24px] border border-border bg-white/85 p-4 shadow-[0_12px_24px_rgba(17,36,58,0.06)]">
+                <p className="text-lg font-semibold text-command">{vol.name}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {vol.skills.map(skill => (
+                    <Badge key={skill} tone="neutral" caps={false}>{skill}</Badge>
+                  ))}
+                  {vol.assets?.map(asset => (
+                    <Badge key={asset} tone="warn" caps={false}>{asset}</Badge>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {getVolunteersByCrisisId(crisis.id).length === 0 && (
+              <p className="text-sm text-command-soft/78">No volunteers currently assigned.</p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {canManageCrisis && (
+        <section className="mt-6 grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <div className="space-y-6">
           <section
             id="task-creator"
@@ -1599,17 +1660,21 @@ export function CrisisDetailView({
                           </div>
 
                           {isMatchableTask ? (
-                            <Button
-                              variant="secondary"
-                              onClick={() => handleFindVolunteers(task)}
-                              disabled={isLoadingMatches}
-                            >
-                              {isLoadingMatches
-                                ? "Finding volunteers..."
-                                : hasStoredResults
-                                  ? "Refresh volunteers"
-                                  : "Find Volunteers"}
-                            </Button>
+                            canManageCrisis ? (
+                              <Button
+                                variant="secondary"
+                                onClick={() => handleFindVolunteers(task)}
+                                disabled={isLoadingMatches}
+                              >
+                                {isLoadingMatches
+                                  ? "Finding volunteers..."
+                                  : hasStoredResults
+                                    ? "Refresh volunteers"
+                                    : "Find Volunteers"}
+                              </Button>
+                            ) : (
+                              <Badge tone="safe">Only NGO can match volunteers</Badge>
+                            )
                           ) : (
                             <Badge tone="safe">Task no longer open</Badge>
                           )}
@@ -1815,8 +1880,9 @@ export function CrisisDetailView({
           </div>
         </div>
       </section>
+      )}
 
-      <section className="rounded-[32px] border border-border bg-surface p-6 shadow-[0_18px_40px_rgba(17,36,58,0.08)]">
+      <section className="mt-6 rounded-[32px] border border-border bg-surface p-6 shadow-[0_18px_40px_rgba(17,36,58,0.08)]">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.28em] text-command-soft/70">
@@ -1832,7 +1898,8 @@ export function CrisisDetailView({
         </div>
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[0.98fr_1.02fr]">
-          <div className="rounded-[28px] border border-border bg-white/84 p-5 shadow-[0_12px_24px_rgba(17,36,58,0.06)]">
+          {canManageCrisis && (
+            <div className="rounded-[28px] border border-border bg-white/84 p-5 shadow-[0_12px_24px_rgba(17,36,58,0.06)]">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-command-soft/65">
@@ -1964,8 +2031,9 @@ export function CrisisDetailView({
               </div>
             </form>
           </div>
+          )}
 
-          <div>
+          <div className={canManageCrisis ? "" : "col-span-2"}>
             {resourceLoadError ? (
               <div className="rounded-[24px] border border-alert/25 bg-alert/8 p-4">
                 <p className="text-sm font-semibold text-alert">Resource board warning</p>
@@ -1990,8 +2058,16 @@ export function CrisisDetailView({
                   <ResourceCard
                     key={need.id}
                     need={need}
-                    actionHref={`/donor/pledge/${need.id}`}
-                    actionLabel="Open pledge page"
+                    actionHref={isDonor ? `/donor/pledge/${need.id}` : undefined}
+                    actionLabel={isDonor ? "Open pledge page" : undefined}
+                    onMarkUrgent={
+                      canManageCrisis && need.urgency !== "critical"
+                        ? async () => {
+                            setFirestoreResourceNeeds(curr => curr.map(n => n.id === need.id ? { ...n, urgency: "critical" } : n));
+                            pushToast({ title: "Supervisor Override", description: "Marked as critically urgent", tone: "alert" });
+                          }
+                        : undefined
+                    }
                   />
                 ))
               ) : (

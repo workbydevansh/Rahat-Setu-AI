@@ -357,3 +357,10 @@ button:focus-visible {
     background: #ffffff !important;
   }
 }
+
+/* Ensure leaflet maps take full height of their wrapper */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 0;
+}

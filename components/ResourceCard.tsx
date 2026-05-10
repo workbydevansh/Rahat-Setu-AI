@@ -13,6 +13,7 @@ interface ResourceCardProps {
   compact?: boolean;
   actionHref?: string;
   actionLabel?: string;
+  onMarkUrgent?: () => void;
 }
 
 export function ResourceCard({
@@ -20,6 +21,7 @@ export function ResourceCard({
   compact = false,
   actionHref,
   actionLabel,
+  onMarkUrgent,
 }: ResourceCardProps) {
   const progress = progressPercentage(need.quantityPledged, need.quantityNeeded);
   const urgencyTone = toneFromUrgency(need.urgency);
@@ -68,9 +70,20 @@ export function ResourceCard({
         ) : null}
 
         {actionHref && actionLabel ? (
-          <div className="mt-5">
+          <div className="mt-5 flex gap-2">
             <Button href={actionHref} variant="secondary" size="sm">
               {actionLabel}
+            </Button>
+            {onMarkUrgent && (
+              <Button type="button" onClick={onMarkUrgent} variant="secondary" size="sm">
+                Mark Critical
+              </Button>
+            )}
+          </div>
+        ) : onMarkUrgent ? (
+          <div className="mt-5">
+            <Button type="button" onClick={onMarkUrgent} variant="secondary" size="sm">
+              Mark Critical
             </Button>
           </div>
         ) : null}

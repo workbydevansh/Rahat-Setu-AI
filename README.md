@@ -51,7 +51,7 @@ RahatSetu AI aligns most directly with these UN Sustainable Development Goals:
 - Crisis impact dashboard with metrics and report export placeholder
 - Admin review panel for verification, suspicious reports, red-risk task approval, and active crisis monitoring
 - Printable certificate pages with share and PDF placeholder actions
-- Google Maps-ready crisis map placeholder with graceful fallback when no API key is configured
+- LocationIQ-ready crisis map with graceful fallback when no API key is configured
 - Privacy, safety, loading, empty, and error states across the app
 
 ## Tech Stack
@@ -63,7 +63,7 @@ RahatSetu AI aligns most directly with these UN Sustainable Development Goals:
 - `Firebase Authentication`
 - `Cloud Firestore`
 - `Firebase Storage` placeholder
-- `Google Maps` placeholder integration path
+- `LocationIQ` integration for interactive map
 - `Gemini API` integration for structured AI helpers
 
 ## Architecture
@@ -263,7 +263,7 @@ Create a `.env.local` file in the project root using `.env.example` as the base.
 | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Yes for Firebase setup completeness | Firebase storage bucket |
 | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Yes for Firebase setup completeness | Firebase sender ID |
 | `NEXT_PUBLIC_FIREBASE_APP_ID` | Yes for Firebase auth and Firestore | Firebase app ID |
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Optional | Enables future real map integration |
+| `NEXT_PUBLIC_LOCATIONIQ_API_KEY` | Optional | Enables interactive map integration |
 | `GEMINI_API_KEY` | Optional but recommended | Enables AI parsing and explanation features |
 
 ## How To Run Locally
@@ -280,7 +280,7 @@ npm install
 copy .env.example .env.local
 ```
 
-Then fill in the required Firebase values. Add the Gemini and Google Maps keys if you want those features enabled.
+Then fill in the required Firebase values. Add the Gemini and LocationIQ keys if you want those features enabled.
 
 ### 3. Start the dev server
 
@@ -397,7 +397,7 @@ Firestore cannot partially hide a single sensitive field inside a readable docum
 ## Future Scope
 
 - Real payment gateway integration for verified donations
-- Real-time Google Maps integration with marker clustering and route planning
+- Real-time LocationIQ integration with marker clustering and route planning
 - SMS, WhatsApp, email, and push notification delivery
 - OTP-based onboarding for low-bandwidth field teams
 - Multilingual interface support for regional deployments

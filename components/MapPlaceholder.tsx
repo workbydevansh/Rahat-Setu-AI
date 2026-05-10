@@ -25,7 +25,7 @@ export function MapPlaceholder({
             {subtitle}
           </p>
         </div>
-        <Badge tone="neutral">Google Maps slot</Badge>
+        <Badge tone="neutral">LocationIQ slot</Badge>
       </div>
 
       <div className="relative mt-6 overflow-hidden rounded-[28px] border border-border bg-[linear-gradient(180deg,#17314c_0%,#13273b_100%)] p-4 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">

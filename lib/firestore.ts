@@ -373,6 +373,13 @@ export async function createCrisis(data: CrisisCreateData) {
       throw new Error("Please complete the title, location, and contact person fields.");
     }
 
+    if (data.createdBy) {
+      const creatorProfile = await getUserProfile(data.createdBy);
+      if (creatorProfile && creatorProfile.role !== "ngo" && creatorProfile.role !== "admin") {
+        throw new Error("Unauthorized: Only verified NGOs or Admins can create crisis rooms.");
+      }
+    }
+
     const database = getFirestoreDb();
     const documentRef = doc(collection(database, CRISIS_COLLECTION));
     const now = new Date().toISOString();
@@ -612,6 +619,13 @@ export async function createTask(data: TaskCreateData) {
       throw new Error("Please complete the task title, location, and time window.");
     }
 
+    if (data.createdBy) {
+      const creatorProfile = await getUserProfile(data.createdBy);
+      if (creatorProfile && creatorProfile.role !== "ngo" && creatorProfile.role !== "admin") {
+        throw new Error("Unauthorized: Only verified NGOs or Admins can create tasks.");
+      }
+    }
+
     const database = getFirestoreDb();
     const documentRef = doc(collection(database, TASK_COLLECTION));
     const now = new Date().toISOString();
@@ -726,6 +740,13 @@ export async function createResourceNeed(data: ResourceNeedCreateData) {
 
     if (!data.crisisId || !label || !address || !deadline) {
       throw new Error("Please complete the need label, location, and deadline.");
+    }
+
+    if (data.createdBy) {
+      const creatorProfile = await getUserProfile(data.createdBy);
+      if (creatorProfile && creatorProfile.role !== "ngo" && creatorProfile.role !== "admin") {
+        throw new Error("Unauthorized: Only verified NGOs or Admins can post resource needs.");
+      }
     }
 
     const database = getFirestoreDb();

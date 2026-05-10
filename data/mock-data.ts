@@ -127,7 +127,7 @@ export const landingFeatures: ResponsePillar[] = [
     title: "Live map coordination",
     kicker: "Feature 06",
     description:
-      "Google Maps-ready views will show crisis areas, task pins, NGO hubs, donors, and nearby responders without blocking the MVP when no key is configured.",
+      "LocationIQ interactive map views will show crisis areas, task pins, NGO hubs, donors, and nearby responders without blocking the MVP when no key is configured.",
     tone: "info",
   },
 ] as const;

@@ -1,8 +1,10 @@
-import type { Crisis, ReliefTask, VolunteerProfile } from "@/types";
+import type { Crisis, ReliefTask, VolunteerProfile, VolunteerSkillTag } from "@/types";
+import { VOLUNTEER_SKILL_TAG_LABELS } from "@/types";
 
-const DISTANCE_WEIGHT = 30;
-const SKILL_WEIGHT = 25;
-const ASSET_WEIGHT = 20;
+const DISTANCE_WEIGHT = 27;
+const SKILL_WEIGHT = 22;
+const ASSET_WEIGHT = 18;
+const SKILL_TAG_WEIGHT = 8;
 const AVAILABILITY_WEIGHT = 10;
 const VERIFICATION_WEIGHT = 10;
 const LANGUAGE_WEIGHT = 5;
@@ -260,6 +262,88 @@ export function calculateLanguageScore(
   );
 }
 
+/**
+ * Skill tag matching maps a volunteer's structured `skillTags` (e.g. "doctor",
+ * "logistics") against the crisis's `suggestedSkills` free-text field.
+ * This provides a structured bonus on top of free-text skill matching.
+ */
+const SKILL_TAG_CRISIS_MAP: Record<string, VolunteerSkillTag[]> = {
+  "first-aid": ["doctor", "nurse", "paramedic"],
+  "medical": ["doctor", "nurse", "paramedic"],
+  "burn-care support": ["doctor", "nurse", "paramedic"],
+  "food distribution": ["cook", "logistics"],
+  "camp coordination": ["logistics", "counselor"],
+  "water rescue": ["boat_operator"],
+  "boat handling": ["boat_operator"],
+  "terrain driving": ["driver"],
+  "logistics coordination": ["logistics", "driver"],
+  "drone operation": ["drone_operator"],
+  "local language support": ["translator"],
+  "local guidance": ["driver"],
+  "structural assessment": ["engineer"],
+  "electrical repair": ["electrician"],
+  "plumbing repair": ["plumber"],
+  "carpentry": ["carpenter"],
+  "teaching": ["teacher"],
+  "counseling": ["counselor"],
+};
+
+export function calculateSkillTagScore(
+  crisis: Crisis,
+  volunteer: VolunteerProfile,
+) {
+  const tags = volunteer.skillTags;
+
+  if (!tags || tags.length === 0) {
+    return 0;
+  }
+
+  const crisisSkills = crisis.suggestedSkills ?? [];
+
+  if (crisisSkills.length === 0) {
+    // No suggested skills — give a small bonus for having any tags at all
+    return 0.2;
+  }
+
+  // For each crisis skill, check if any of the volunteer's tags map to it
+  let matchCount = 0;
+
+  for (const crisisSkill of crisisSkills) {
+    const normalizedSkill = crisisSkill.trim().toLowerCase();
+    const mappedTags = SKILL_TAG_CRISIS_MAP[normalizedSkill] ?? [];
+
+    if (mappedTags.some((mappedTag) => tags.includes(mappedTag))) {
+      matchCount++;
+    }
+  }
+
+  return clampScore(matchCount / crisisSkills.length);
+}
+
+function getSkillTagReasons(crisis: Crisis, volunteer: VolunteerProfile) {
+  const tags = volunteer.skillTags;
+
+  if (!tags || tags.length === 0) {
+    return [];
+  }
+
+  const crisisSkills = crisis.suggestedSkills ?? [];
+  const matchedLabels: string[] = [];
+
+  for (const crisisSkill of crisisSkills) {
+    const normalizedSkill = crisisSkill.trim().toLowerCase();
+    const mappedTags = SKILL_TAG_CRISIS_MAP[normalizedSkill] ?? [];
+
+    for (const tag of mappedTags) {
+      if (tags.includes(tag) && !matchedLabels.includes(VOLUNTEER_SKILL_TAG_LABELS[tag])) {
+        matchedLabels.push(VOLUNTEER_SKILL_TAG_LABELS[tag]);
+      }
+    }
+  }
+
+  return matchedLabels.slice(0, 2).map((label) => `Skill tag: ${label}`);
+}
+
 export function rankVolunteersForTask(
   task: ReliefTask,
   volunteers: VolunteerProfile[],
@@ -287,6 +371,7 @@ export function rankVolunteersForTask(
       const distanceScore = getDistanceScore(distanceKm);
       const skillScore = calculateSkillScore(task.requiredSkills, volunteer.skills);
       const assetScore = calculateAssetScore(task.requiredAssets, volunteer.assets);
+      const skillTagScore = calculateSkillTagScore(crisis, volunteer);
       const availabilityScore = calculateAvailabilityScore(task, volunteer);
       const verificationScore = calculateVerificationScore(volunteer);
       const languageScore = clampScore(
@@ -297,6 +382,7 @@ export function rankVolunteersForTask(
         distanceScore * DISTANCE_WEIGHT +
         skillScore * SKILL_WEIGHT +
         assetScore * ASSET_WEIGHT +
+        skillTagScore * SKILL_TAG_WEIGHT +
         availabilityScore * AVAILABILITY_WEIGHT +
         verificationScore * VERIFICATION_WEIGHT +
         languageScore * LANGUAGE_WEIGHT;
@@ -333,6 +419,11 @@ export function rankVolunteersForTask(
       if (localReason) {
         reasons.push(localReason);
       }
+
+      const skillTagReasons = getSkillTagReasons(crisis, volunteer);
+      skillTagReasons.forEach((reason) => {
+        reasons.push(reason);
+      });
 
       if (reasons.length === 0) {
         reasons.push("Can support as a nearby volunteer");

@@ -411,6 +411,21 @@ export function ProfileView() {
                     </Badge>
                   ))}
                 </div>
+                {profile.volunteerProfile.skillTags &&
+                profile.volunteerProfile.skillTags.length > 0 ? (
+                  <div className="rounded-[24px] border border-border bg-white/84 p-4">
+                    <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-command-soft/65">
+                      Professional skill tags
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {profile.volunteerProfile.skillTags.map((tag) => (
+                        <Badge key={tag} tone="info">
+                          {tag.replace(/_/g, " ")}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </>
             ) : null}
 

@@ -215,6 +215,7 @@ export function getDefaultRegisterValues(): RegisterFormValues {
       availability: "available_now",
       assets: "",
       emergencyRadius: "",
+      skillTags: [],
     },
     donor: {
       helpTypes: [],
@@ -281,6 +282,7 @@ export function buildUserProfileData(values: RegisterFormValues): UserProfileDat
           availableTime: "Flexible this week",
           emergencyAvailable: false,
           emergencyRadiusKm: Number.parseInt(values.volunteer.emergencyRadius, 10) || 0,
+          skillTags: values.volunteer.skillTags.length > 0 ? values.volunteer.skillTags : undefined,
           createdAt: now,
           updatedAt: now,
           status: "pending",

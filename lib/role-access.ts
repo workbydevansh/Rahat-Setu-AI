@@ -33,6 +33,7 @@ export const topNavigationItems: RoleAwareNavigationItem[] = [
   },
   { href: "/profile", label: "Profile", audiences: ["ngo", "volunteer", "donor", "admin"] },
   { href: "/tasks", label: "Tasks", audiences: ["public", "ngo", "volunteer", "admin"] },
+  { href: "/impact-hub", label: "Impact Hub", audiences: ["public", "ngo", "volunteer", "donor", "admin"] },
   { href: "/database", label: "Database", audiences: ["ngo", "volunteer", "donor", "admin"] },
   { href: "/ngo/dashboard", label: "NGO", audiences: ["public", "ngo", "admin"] },
   {
@@ -79,6 +80,12 @@ export const sidebarNavigationItems: RoleAwareNavigationItem[] = [
     label: "Database",
     kicker: "History and pledges",
     audiences: ["ngo", "volunteer", "donor", "admin"],
+  },
+  {
+    href: "/impact-hub",
+    label: "Impact Hub",
+    kicker: "Transparency & past work",
+    audiences: ["public", "ngo", "volunteer", "donor", "admin"],
   },
   {
     href: "/ngo/dashboard",

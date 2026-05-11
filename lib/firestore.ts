@@ -14,44 +14,68 @@ import {
 import { getFirebaseApp, isFirebaseConfigured } from "@/lib/firebase";
 import {
   assignLocalVolunteerToTask,
+  awardLocalImpactBadge,
   createLocalCertificateRecord,
   createLocalCrisis,
+  createLocalDonation,
   createLocalMoneyDonationPledge,
   createLocalResourceAcknowledgementCertificate,
   createLocalResourceNeed,
   createLocalResourcePledge,
+  createLocalStorySpotlight,
   createLocalTask,
+  createLocalThankYouMedia,
   createLocalUserProfile,
   createLocalVolunteerMatch,
   createLocalVolunteerNotificationPlaceholder,
+  createLocalWallOfHopeEntry,
   getLocalCertificate,
   getLocalCertificates,
   getLocalCertificatesForCrisis,
   getLocalCertificatesForVolunteer,
   getLocalCrisis,
   getLocalCrises,
+  getLocalCrisisImpactMetrics,
+  getLocalDonation,
+  getLocalDonations,
+  getLocalDonationsForCrisis,
+  getLocalDonationsForDonor,
+  getLocalDonationTimelineSteps,
+  getLocalImpactBadges,
+  getLocalImpactBadgesForUser,
   getLocalResourceNeed,
   getLocalResourceNeeds,
   getLocalResourceNeedsForCrisis,
   getLocalResourcePledges,
   getLocalResourcePledgesForCrisis,
+  getLocalStorySpotlights,
   getLocalTasks,
   getLocalTasksForCrisis,
+  getLocalThankYouMediaForUser,
   getLocalUserProfile,
   getLocalVolunteerMatches,
   getLocalVolunteerMatchesForCrisis,
   getLocalVolunteerMatchesForVolunteer,
   getLocalVolunteerProfiles,
+  getLocalWallOfHopeEntries,
+  updateLocalDonationTimelineStatus,
   updateLocalTaskWorkflowStatus,
   updateLocalCrisisWorkflowStatus,
   updateLocalResourceNeedWorkflowStatus,
   updateLocalVolunteerMatchStatus,
+  upsertLocalCrisisImpactMetric,
 } from "@/lib/local-database";
 import type {
   Certificate,
   Crisis,
   CrisisCreateData,
+  CrisisImpactMetric,
   CrisisStatus,
+  Donation,
+  DonationTrackingStatus,
+  DonationTimelineStep,
+  ImpactBadge,
+  Location,
   MoneyDonationPledgeCreateData,
   ReliefTask,
   ResourceNeed,
@@ -59,13 +83,16 @@ import type {
   ResourceNeedStatus,
   ResourcePledge,
   ResourcePledgeCreateData,
+  StorySpotlight,
   TaskCreateData,
   TaskStatus,
+  ThankYouMedia,
   UserProfile,
   UserProfileData,
   VolunteerMatch,
   VolunteerMatchStatus,
   VolunteerProfile,
+  WallOfHopeEntry,
 } from "@/types";
 
 const USER_COLLECTION = "users";
@@ -76,6 +103,13 @@ const RESOURCE_PLEDGE_COLLECTION = "resourcePledges";
 const MATCH_COLLECTION = "matches";
 const CERTIFICATE_COLLECTION = "certificates";
 const NOTIFICATION_COLLECTION = "notifications";
+const BADGE_COLLECTION = "impactBadges";
+const DONATION_COLLECTION = "donations";
+const DONATION_TIMELINE_COLLECTION = "donationTimelineSteps";
+const WALL_OF_HOPE_COLLECTION = "wallOfHopeEntries";
+const IMPACT_METRIC_COLLECTION = "crisisImpactMetrics";
+const STORY_SPOTLIGHT_COLLECTION = "storySpotlights";
+const THANK_YOU_MEDIA_COLLECTION = "thankYouMedia";
 
 function getFirestoreDb() {
   return getFirestore(getFirebaseApp());
@@ -1612,6 +1646,531 @@ export async function createVolunteerNotificationPlaceholder(data: {
   } catch (error) {
     if (shouldFallbackToLocalDatabase(error)) {
       return createLocalVolunteerNotificationPlaceholder(data);
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Impact Badge operations
+// ---------------------------------------------------------------------------
+
+export async function getImpactBadges() {
+  if (shouldUseLocalDatabase()) {
+    return getLocalImpactBadges();
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const snapshot = await getDocs(collection(database, BADGE_COLLECTION));
+
+    return snapshot.docs
+      .map((document) => document.data() as ImpactBadge)
+      .sort((a, b) => b.earnedAt.localeCompare(a.earnedAt));
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return getLocalImpactBadges();
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+export async function getImpactBadgesForUser(userId: string) {
+  if (shouldUseLocalDatabase()) {
+    return getLocalImpactBadgesForUser(userId);
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const snapshot = await getDocs(
+      query(collection(database, BADGE_COLLECTION), where("userId", "==", userId)),
+    );
+
+    return snapshot.docs
+      .map((document) => document.data() as ImpactBadge)
+      .sort((a, b) => b.earnedAt.localeCompare(a.earnedAt));
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return getLocalImpactBadgesForUser(userId);
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+export async function awardImpactBadge(
+  data: Omit<ImpactBadge, "id" | "earnedAt">,
+) {
+  if (shouldUseLocalDatabase()) {
+    return awardLocalImpactBadge(data);
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const documentRef = doc(collection(database, BADGE_COLLECTION));
+    const badge: ImpactBadge = {
+      ...data,
+      id: documentRef.id,
+      earnedAt: new Date().toISOString(),
+    };
+
+    await setDoc(documentRef, badge);
+    return badge;
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return awardLocalImpactBadge(data);
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Donation operations
+// ---------------------------------------------------------------------------
+
+export async function getDonations() {
+  if (shouldUseLocalDatabase()) {
+    return getLocalDonations();
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const snapshot = await getDocs(collection(database, DONATION_COLLECTION));
+
+    return snapshot.docs
+      .map((document) => document.data() as Donation)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return getLocalDonations();
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+export async function getDonation(id: string) {
+  if (shouldUseLocalDatabase()) {
+    return getLocalDonation(id);
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const snapshot = await getDoc(doc(database, DONATION_COLLECTION, id));
+    return snapshot.exists() ? (snapshot.data() as Donation) : null;
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return getLocalDonation(id);
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+export async function getDonationsForDonor(donorId: string) {
+  if (shouldUseLocalDatabase()) {
+    return getLocalDonationsForDonor(donorId);
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const snapshot = await getDocs(
+      query(collection(database, DONATION_COLLECTION), where("donorId", "==", donorId)),
+    );
+
+    return snapshot.docs
+      .map((document) => document.data() as Donation)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return getLocalDonationsForDonor(donorId);
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+export async function getDonationsForCrisis(crisisId: string) {
+  if (shouldUseLocalDatabase()) {
+    return getLocalDonationsForCrisis(crisisId);
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const snapshot = await getDocs(
+      query(collection(database, DONATION_COLLECTION), where("crisisId", "==", crisisId)),
+    );
+
+    return snapshot.docs
+      .map((document) => document.data() as Donation)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return getLocalDonationsForCrisis(crisisId);
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+export async function createDonation(
+  data: Omit<Donation, "id" | "createdAt" | "updatedAt">,
+) {
+  if (shouldUseLocalDatabase()) {
+    return createLocalDonation(data);
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const documentRef = doc(collection(database, DONATION_COLLECTION));
+    const now = new Date().toISOString();
+    const donation: Donation = {
+      ...data,
+      id: documentRef.id,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await setDoc(documentRef, donation);
+
+    // Create initial timeline step
+    const stepRef = doc(collection(database, DONATION_TIMELINE_COLLECTION));
+    const step: DonationTimelineStep = {
+      id: stepRef.id,
+      donationId: donation.id,
+      step: "received",
+      title: "Donation received",
+      description: `₹${donation.amount} donation confirmed and recorded.`,
+      completedAt: now,
+      createdAt: now,
+    };
+
+    await setDoc(stepRef, step);
+
+    // Privacy-safe Wall of Hope entry (opt-in only, never stores amounts)
+    if (donation.optInWallOfHope && donation.displayName) {
+      const wallRef = doc(collection(database, WALL_OF_HOPE_COLLECTION));
+      const crisis = await getCrisis(donation.crisisId);
+      const wallEntry: WallOfHopeEntry = {
+        id: wallRef.id,
+        userId: donation.donorId,
+        displayName: donation.displayName,
+        role: "donor",
+        crisisTitle: crisis?.title,
+        createdAt: now,
+      };
+
+      await setDoc(wallRef, wallEntry);
+    }
+
+    return donation;
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return createLocalDonation(data);
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+export async function updateDonationTimelineStatus(
+  donationId: string,
+  status: DonationTrackingStatus,
+  stepTitle: string,
+  stepDescription?: string,
+  stepLocation?: Location,
+) {
+  if (shouldUseLocalDatabase()) {
+    return updateLocalDonationTimelineStatus(
+      donationId,
+      status,
+      stepTitle,
+      stepDescription,
+      stepLocation,
+    );
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const now = new Date().toISOString();
+    const donationRef = doc(database, DONATION_COLLECTION, donationId);
+
+    await updateDoc(donationRef, {
+      timelineStatus: status,
+      updatedAt: now,
+    });
+
+    const stepRef = doc(collection(database, DONATION_TIMELINE_COLLECTION));
+    const step: DonationTimelineStep = {
+      id: stepRef.id,
+      donationId,
+      step: status,
+      title: stepTitle,
+      description: stepDescription,
+      location: stepLocation,
+      completedAt: now,
+      createdAt: now,
+    };
+
+    await setDoc(stepRef, step);
+
+    const donationSnapshot = await getDoc(donationRef);
+    const donation = donationSnapshot.data() as Donation;
+
+    return { donation, step };
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return updateLocalDonationTimelineStatus(
+        donationId,
+        status,
+        stepTitle,
+        stepDescription,
+        stepLocation,
+      );
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Donation Timeline Steps
+// ---------------------------------------------------------------------------
+
+export async function getDonationTimelineSteps(donationId: string) {
+  if (shouldUseLocalDatabase()) {
+    return getLocalDonationTimelineSteps(donationId);
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const snapshot = await getDocs(
+      query(collection(database, DONATION_TIMELINE_COLLECTION), where("donationId", "==", donationId)),
+    );
+
+    return snapshot.docs
+      .map((document) => document.data() as DonationTimelineStep)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return getLocalDonationTimelineSteps(donationId);
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Wall of Hope (privacy-safe — never stores amounts)
+// ---------------------------------------------------------------------------
+
+export async function getWallOfHopeEntries() {
+  if (shouldUseLocalDatabase()) {
+    return getLocalWallOfHopeEntries();
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const snapshot = await getDocs(collection(database, WALL_OF_HOPE_COLLECTION));
+
+    return snapshot.docs
+      .map((document) => document.data() as WallOfHopeEntry)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return getLocalWallOfHopeEntries();
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+export async function createWallOfHopeEntry(
+  data: Omit<WallOfHopeEntry, "id" | "createdAt">,
+) {
+  if (shouldUseLocalDatabase()) {
+    return createLocalWallOfHopeEntry(data);
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const documentRef = doc(collection(database, WALL_OF_HOPE_COLLECTION));
+    const entry: WallOfHopeEntry = {
+      ...data,
+      id: documentRef.id,
+      createdAt: new Date().toISOString(),
+    };
+
+    await setDoc(documentRef, entry);
+    return entry;
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return createLocalWallOfHopeEntry(data);
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Crisis Impact Metrics
+// ---------------------------------------------------------------------------
+
+export async function getCrisisImpactMetrics(crisisId: string) {
+  if (shouldUseLocalDatabase()) {
+    return getLocalCrisisImpactMetrics(crisisId);
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const snapshot = await getDocs(
+      query(collection(database, IMPACT_METRIC_COLLECTION), where("crisisId", "==", crisisId)),
+    );
+
+    return snapshot.docs.map((document) => document.data() as CrisisImpactMetric);
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return getLocalCrisisImpactMetrics(crisisId);
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+export async function upsertCrisisImpactMetric(
+  data: Omit<CrisisImpactMetric, "id" | "updatedAt"> & { id?: string },
+) {
+  if (shouldUseLocalDatabase()) {
+    return upsertLocalCrisisImpactMetric(data);
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const documentRef = data.id
+      ? doc(database, IMPACT_METRIC_COLLECTION, data.id)
+      : doc(collection(database, IMPACT_METRIC_COLLECTION));
+    const metric: CrisisImpactMetric = {
+      ...data,
+      id: documentRef.id,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await setDoc(documentRef, metric, { merge: true });
+    return metric;
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return upsertLocalCrisisImpactMetric(data);
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Story Spotlights
+// ---------------------------------------------------------------------------
+
+export async function getStorySpotlights(crisisId: string) {
+  if (shouldUseLocalDatabase()) {
+    return getLocalStorySpotlights(crisisId);
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const snapshot = await getDocs(
+      query(collection(database, STORY_SPOTLIGHT_COLLECTION), where("crisisId", "==", crisisId)),
+    );
+
+    return snapshot.docs
+      .map((document) => document.data() as StorySpotlight)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return getLocalStorySpotlights(crisisId);
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+export async function createStorySpotlight(
+  data: Omit<StorySpotlight, "id" | "createdAt">,
+) {
+  if (shouldUseLocalDatabase()) {
+    return createLocalStorySpotlight(data);
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const documentRef = doc(collection(database, STORY_SPOTLIGHT_COLLECTION));
+    const story: StorySpotlight = {
+      ...data,
+      id: documentRef.id,
+      createdAt: new Date().toISOString(),
+    };
+
+    await setDoc(documentRef, story);
+    return story;
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return createLocalStorySpotlight(data);
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Thank You Media
+// ---------------------------------------------------------------------------
+
+export async function getThankYouMediaForUser(userId: string) {
+  if (shouldUseLocalDatabase()) {
+    return getLocalThankYouMediaForUser(userId);
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const snapshot = await getDocs(
+      query(collection(database, THANK_YOU_MEDIA_COLLECTION), where("targetUserId", "==", userId)),
+    );
+
+    return snapshot.docs
+      .map((document) => document.data() as ThankYouMedia)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return getLocalThankYouMediaForUser(userId);
+    }
+
+    throw new Error(mapFirestoreError(error));
+  }
+}
+
+export async function createThankYouMedia(
+  data: Omit<ThankYouMedia, "id" | "createdAt">,
+) {
+  if (shouldUseLocalDatabase()) {
+    return createLocalThankYouMedia(data);
+  }
+
+  try {
+    const database = getFirestoreDb();
+    const documentRef = doc(collection(database, THANK_YOU_MEDIA_COLLECTION));
+    const media: ThankYouMedia = {
+      ...data,
+      id: documentRef.id,
+      createdAt: new Date().toISOString(),
+    };
+
+    await setDoc(documentRef, media);
+    return media;
+  } catch (error) {
+    if (shouldFallbackToLocalDatabase(error)) {
+      return createLocalThankYouMedia(data);
     }
 
     throw new Error(mapFirestoreError(error));

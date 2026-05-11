@@ -286,13 +286,19 @@ export default function VolunteerDashboardPage() {
     setErrorMessage(null);
 
     try {
+      const nextEmergencyAvailable = !profileSource.volunteerProfile.emergencyAvailable;
       const nextSource = await saveVolunteerProfileSource(profileSource, {
         ...profileSource.volunteerProfile,
-        emergencyAvailable: !profileSource.volunteerProfile.emergencyAvailable,
+        emergencyAvailable: nextEmergencyAvailable,
         updatedAt: new Date().toISOString(),
       });
 
       setProfileSource(nextSource);
+      setActionMessage(
+        nextEmergencyAvailable
+          ? "Emergency availability enabled. You may now be matched to urgent nearby crises."
+          : "Emergency availability disabled. You will only receive standard task requests.",
+      );
     } catch (error) {
       setErrorMessage(
         error instanceof Error

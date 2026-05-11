@@ -1,17 +1,24 @@
 import type {
   Certificate,
   Crisis,
+  CrisisImpactMetric,
   CrisisReport,
   CrisisTypePanel,
   DashboardStat,
+  Donation,
+  DonationTimelineStep,
+  ImpactBadge,
   MapMarker,
   NGOProfile,
   ReliefTask,
   ResourceNeed,
   ResourcePledge,
   ResponsePillar,
+  StorySpotlight,
+  ThankYouMedia,
   VolunteerMatch,
   VolunteerProfile,
+  WallOfHopeEntry,
 } from "@/types";
 
 export const responseSignals = [
@@ -439,6 +446,7 @@ export const volunteers: VolunteerProfile[] = [
     },
     distanceKm: 1.8,
     skills: ["first-aid", "food distribution", "Hindi"],
+    skillTags: ["paramedic", "cook"],
     assets: ["bike"],
     languages: ["Hindi", "English"],
     availability: "available_now",
@@ -465,6 +473,7 @@ export const volunteers: VolunteerProfile[] = [
     },
     distanceKm: 2.6,
     skills: ["water rescue", "Malayalam", "logistics"],
+    skillTags: ["boat_operator", "logistics"],
     assets: ["boat"],
     languages: ["Malayalam", "English"],
     availability: "available_now",
@@ -491,6 +500,7 @@ export const volunteers: VolunteerProfile[] = [
     },
     distanceKm: 4.1,
     skills: ["terrain driving", "local guidance", "first-aid"],
+    skillTags: ["driver", "logistics"],
     assets: ["4x4 vehicle"],
     languages: ["Hindi", "Pahari"],
     availability: "scheduled",
@@ -517,6 +527,7 @@ export const volunteers: VolunteerProfile[] = [
     },
     distanceKm: 3.2,
     skills: ["camp support", "shelter onboarding", "Hindi"],
+    skillTags: ["counselor"],
     assets: ["car"],
     languages: ["Hindi", "Urdu", "English"],
     availability: "limited",
@@ -1414,4 +1425,517 @@ export function getCertificatesByCrisisId(crisisId: string) {
 
 export function getCertificateById(id: string) {
   return certificates.find((certificate) => certificate.id === id);
+}
+
+// ---------------------------------------------------------------------------
+// Seed data for new platform features
+// ---------------------------------------------------------------------------
+
+export const impactBadges: ImpactBadge[] = [
+  {
+    id: "badge-ravi-first-response",
+    userId: "seed-user-vol-ravi-kumar",
+    type: "crisis_responder",
+    crisisId: "vikas-nagar-fire-relief",
+    title: "First Responder",
+    description: "Responded to a crisis within the first 24 hours of activation.",
+    icon: "🚨",
+    tier: "silver",
+    earnedAt: "2026-04-18T14:00:00.000Z",
+  },
+  {
+    id: "badge-ravi-community",
+    userId: "seed-user-vol-ravi-kumar",
+    type: "community_builder",
+    title: "Community Builder",
+    description: "Participated in 3 or more crisis relief efforts.",
+    icon: "🤝",
+    tier: "gold",
+    earnedAt: "2026-04-20T08:00:00.000Z",
+  },
+  {
+    id: "badge-aneesh-early",
+    userId: "seed-user-vol-aneesh-jose",
+    type: "early_supporter",
+    crisisId: "kerala-flood-relief",
+    title: "Early Supporter",
+    description: "Among the first 10 volunteers to register on the platform.",
+    icon: "⭐",
+    tier: "bronze",
+    earnedAt: "2026-03-22T12:00:00.000Z",
+  },
+  {
+    id: "badge-kitchen-first-donation",
+    userId: "donor-community-kitchen",
+    type: "first_donation",
+    crisisId: "vikas-nagar-fire-relief",
+    title: "First Donation",
+    description: "Made their first resource pledge to a verified crisis campaign.",
+    icon: "💛",
+    tier: "bronze",
+    earnedAt: "2026-04-19T10:15:00.000Z",
+  },
+  {
+    id: "badge-kitchen-resource-hero",
+    userId: "donor-community-kitchen",
+    type: "resource_hero",
+    crisisId: "vikas-nagar-fire-relief",
+    title: "Resource Hero",
+    description: "Pledged more than 100 units to a single crisis campaign.",
+    icon: "🏅",
+    tier: "silver",
+    earnedAt: "2026-04-19T10:30:00.000Z",
+    metadata: { pledgedUnits: 180 },
+  },
+  {
+    id: "badge-river-kitchen-repeat",
+    userId: "donor-river-kitchen",
+    type: "repeat_donor",
+    title: "Repeat Donor",
+    description: "Supported multiple crisis campaigns with resource pledges.",
+    icon: "🔄",
+    tier: "gold",
+    earnedAt: "2026-04-20T07:00:00.000Z",
+    metadata: { totalCampaigns: 3 },
+  },
+];
+
+export const donations: Donation[] = [
+  {
+    id: "donation-001",
+    donorId: "donor-community-kitchen",
+    crisisId: "vikas-nagar-fire-relief",
+    amount: 5000,
+    type: "money",
+    optInWallOfHope: true,
+    displayName: "Community Kitchen Lucknow",
+    status: "fulfilled",
+    timelineStatus: "delivered",
+    createdAt: "2026-04-19T10:00:00.000Z",
+    updatedAt: "2026-04-20T14:00:00.000Z",
+  },
+  {
+    id: "donation-002",
+    donorId: "donor-lucknow-civic-group",
+    crisisId: "vikas-nagar-fire-relief",
+    amount: 12000,
+    type: "money",
+    optInWallOfHope: true,
+    displayName: "Lucknow Civic Group",
+    status: "verified",
+    timelineStatus: "en_route",
+    createdAt: "2026-04-19T13:10:00.000Z",
+    updatedAt: "2026-04-20T11:30:00.000Z",
+  },
+  {
+    id: "donation-003",
+    donorId: "donor-river-kitchen",
+    crisisId: "kerala-flood-relief",
+    amount: 8500,
+    type: "supply",
+    optInWallOfHope: true,
+    displayName: "River Community Kitchen",
+    status: "fulfilled",
+    timelineStatus: "delivered",
+    createdAt: "2026-04-19T07:10:00.000Z",
+    updatedAt: "2026-04-20T16:00:00.000Z",
+  },
+  {
+    id: "donation-004",
+    donorId: "donor-medical-relay",
+    crisisId: "kerala-flood-relief",
+    amount: 3200,
+    type: "supply",
+    optInWallOfHope: false,
+    status: "verified",
+    timelineStatus: "purchasing",
+    createdAt: "2026-04-19T14:20:00.000Z",
+    updatedAt: "2026-04-20T09:00:00.000Z",
+  },
+  {
+    id: "donation-005",
+    donorId: "donor-shelter-partners",
+    crisisId: "vikas-nagar-fire-relief",
+    amount: 15000,
+    type: "money",
+    optInWallOfHope: true,
+    displayName: "Shelter Partners Network",
+    status: "pending",
+    timelineStatus: "received",
+    createdAt: "2026-04-20T06:00:00.000Z",
+    updatedAt: "2026-04-20T06:00:00.000Z",
+  },
+];
+
+export const donationTimelineSteps: DonationTimelineStep[] = [
+  {
+    id: "step-001-received",
+    donationId: "donation-001",
+    step: "received",
+    title: "Donation received",
+    description: "₹5,000 donation confirmed and recorded by Rahat Seva Trust.",
+    completedAt: "2026-04-19T10:05:00.000Z",
+    createdAt: "2026-04-19T10:05:00.000Z",
+  },
+  {
+    id: "step-001-purchasing",
+    donationId: "donation-001",
+    step: "purchasing",
+    title: "Supplies purchased from local vendor",
+    description: "180 food packets procured from Lucknow wholesale market.",
+    location: { lat: 26.89, lng: 80.96, address: "Lucknow wholesale market" },
+    completedAt: "2026-04-19T14:00:00.000Z",
+    createdAt: "2026-04-19T14:00:00.000Z",
+  },
+  {
+    id: "step-001-en-route",
+    donationId: "donation-001",
+    step: "en_route",
+    title: "Supplies dispatched to relief camp",
+    description: "Loaded on transport vehicle heading to Vikas Nagar camp.",
+    location: { lat: 26.89, lng: 80.96, address: "Vikas Nagar transport point" },
+    completedAt: "2026-04-19T18:30:00.000Z",
+    createdAt: "2026-04-19T18:30:00.000Z",
+  },
+  {
+    id: "step-001-delivered",
+    donationId: "donation-001",
+    step: "delivered",
+    title: "Supplies delivered and distributed",
+    description: "Food packets distributed to 128 families at relief camp.",
+    location: { lat: 26.891, lng: 80.961, address: "Vikas Nagar relief camp" },
+    completedAt: "2026-04-20T08:00:00.000Z",
+    createdAt: "2026-04-20T08:00:00.000Z",
+  },
+  {
+    id: "step-002-received",
+    donationId: "donation-002",
+    step: "received",
+    title: "Donation received",
+    description: "₹12,000 donation confirmed from Lucknow Civic Group.",
+    completedAt: "2026-04-19T13:15:00.000Z",
+    createdAt: "2026-04-19T13:15:00.000Z",
+  },
+  {
+    id: "step-002-purchasing",
+    donationId: "donation-002",
+    step: "purchasing",
+    title: "Shelter kits being procured",
+    description: "Purchasing shelter kits from authorized suppliers.",
+    completedAt: "2026-04-20T09:00:00.000Z",
+    createdAt: "2026-04-20T09:00:00.000Z",
+  },
+  {
+    id: "step-002-en-route",
+    donationId: "donation-002",
+    step: "en_route",
+    title: "Shelter kits en route to camp",
+    description: "Transport arranged, expected delivery by evening.",
+    location: { lat: 26.891, lng: 80.961, address: "Lucknow shelter depot" },
+    completedAt: "2026-04-20T11:30:00.000Z",
+    createdAt: "2026-04-20T11:30:00.000Z",
+  },
+  {
+    id: "step-003-received",
+    donationId: "donation-003",
+    step: "received",
+    title: "Supply donation confirmed",
+    description: "260 food packet supply donation received from River Community Kitchen.",
+    completedAt: "2026-04-19T07:15:00.000Z",
+    createdAt: "2026-04-19T07:15:00.000Z",
+  },
+  {
+    id: "step-003-delivered",
+    donationId: "donation-003",
+    step: "delivered",
+    title: "Food packets delivered to Aluva dock",
+    description: "Supplies distributed via boat to flood-affected families.",
+    location: { lat: 10.1118, lng: 76.3471, address: "Aluva dry ration dock" },
+    completedAt: "2026-04-20T16:00:00.000Z",
+    createdAt: "2026-04-20T16:00:00.000Z",
+  },
+  {
+    id: "step-005-received",
+    donationId: "donation-005",
+    step: "received",
+    title: "Donation received",
+    description: "₹15,000 donation confirmed from Shelter Partners Network.",
+    completedAt: "2026-04-20T06:05:00.000Z",
+    createdAt: "2026-04-20T06:05:00.000Z",
+  },
+];
+
+export const wallOfHopeEntries: WallOfHopeEntry[] = [
+  {
+    id: "wall-001",
+    userId: "donor-community-kitchen",
+    displayName: "Community Kitchen Lucknow",
+    role: "donor",
+    message: "Every meal counts. Standing with Vikas Nagar families.",
+    crisisTitle: "Vikas Nagar Fire Relief",
+    createdAt: "2026-04-19T10:10:00.000Z",
+  },
+  {
+    id: "wall-002",
+    userId: "donor-lucknow-civic-group",
+    displayName: "Lucknow Civic Group",
+    role: "donor",
+    crisisTitle: "Vikas Nagar Fire Relief",
+    createdAt: "2026-04-19T13:20:00.000Z",
+  },
+  {
+    id: "wall-003",
+    userId: "seed-user-vol-ravi-kumar",
+    displayName: "Ravi Kumar",
+    role: "volunteer",
+    message: "Proud to serve on the ground. First-aid and food distribution.",
+    crisisTitle: "Vikas Nagar Fire Relief",
+    createdAt: "2026-04-18T15:00:00.000Z",
+  },
+  {
+    id: "wall-004",
+    userId: "donor-river-kitchen",
+    displayName: "River Community Kitchen",
+    role: "donor",
+    message: "Feeding families through the flood. Together we rise.",
+    crisisTitle: "Kerala Flood Relief",
+    createdAt: "2026-04-19T07:30:00.000Z",
+  },
+  {
+    id: "wall-005",
+    userId: "seed-user-vol-aneesh-jose",
+    displayName: "Aneesh Jose",
+    role: "volunteer",
+    message: "Boats ready, families rescued. Keep supporting Kerala.",
+    crisisTitle: "Kerala Flood Relief",
+    createdAt: "2026-04-18T17:00:00.000Z",
+  },
+  {
+    id: "wall-006",
+    userId: "donor-shelter-partners",
+    displayName: "Shelter Partners Network",
+    role: "donor",
+    crisisTitle: "Vikas Nagar Fire Relief",
+    createdAt: "2026-04-20T06:10:00.000Z",
+  },
+  {
+    id: "wall-007",
+    userId: "seed-user-vol-meera-thakur",
+    displayName: "Meera Thakur",
+    role: "volunteer",
+    message: "The mountains are tough but our teams are tougher.",
+    crisisTitle: "Hill Landslide Relief",
+    createdAt: "2026-04-18T06:30:00.000Z",
+  },
+];
+
+export const crisisImpactMetrics: CrisisImpactMetric[] = [
+  {
+    id: "metric-fire-meals",
+    crisisId: "vikas-nagar-fire-relief",
+    label: "Meals Served",
+    value: 10240,
+    unit: "meals",
+    icon: "🍛",
+    updatedAt: "2026-04-20T10:00:00.000Z",
+  },
+  {
+    id: "metric-fire-families",
+    crisisId: "vikas-nagar-fire-relief",
+    label: "Families Sheltered",
+    value: 98,
+    unit: "families",
+    icon: "🏠",
+    updatedAt: "2026-04-20T10:00:00.000Z",
+  },
+  {
+    id: "metric-fire-kits",
+    crisisId: "vikas-nagar-fire-relief",
+    label: "Medical Kits Distributed",
+    value: 74,
+    unit: "kits",
+    icon: "💊",
+    updatedAt: "2026-04-20T09:00:00.000Z",
+  },
+  {
+    id: "metric-fire-volunteers",
+    crisisId: "vikas-nagar-fire-relief",
+    label: "Volunteers Deployed",
+    value: 19,
+    unit: "volunteers",
+    icon: "🙋",
+    updatedAt: "2026-04-20T10:00:00.000Z",
+  },
+  {
+    id: "metric-flood-rescued",
+    crisisId: "kerala-flood-relief",
+    label: "People Rescued",
+    value: 412,
+    unit: "people",
+    icon: "🚤",
+    updatedAt: "2026-04-20T09:30:00.000Z",
+  },
+  {
+    id: "metric-flood-rations",
+    crisisId: "kerala-flood-relief",
+    label: "Dry Ration Packs",
+    value: 380,
+    unit: "packs",
+    icon: "📦",
+    updatedAt: "2026-04-20T09:30:00.000Z",
+  },
+  {
+    id: "metric-flood-boats",
+    crisisId: "kerala-flood-relief",
+    label: "Boat Sorties",
+    value: 34,
+    unit: "trips",
+    icon: "⛵",
+    updatedAt: "2026-04-20T09:30:00.000Z",
+  },
+  {
+    id: "metric-landslide-transport",
+    crisisId: "hill-landslide-relief",
+    label: "Medical Transports",
+    value: 18,
+    unit: "trips",
+    icon: "🚐",
+    updatedAt: "2026-04-20T08:30:00.000Z",
+  },
+  {
+    id: "metric-landslide-supplies",
+    crisisId: "hill-landslide-relief",
+    label: "Supply Drops Completed",
+    value: 27,
+    unit: "drops",
+    icon: "📋",
+    updatedAt: "2026-04-20T08:30:00.000Z",
+  },
+];
+
+export const storySpotlights: StorySpotlight[] = [
+  {
+    id: "story-fire-priya",
+    crisisId: "vikas-nagar-fire-relief",
+    personName: "Priya Devi",
+    personAge: 34,
+    narrative:
+      "Priya lived with her three children in a single-room apartment in Vikas Nagar. When the fire broke out in the early morning, her family escaped with nothing but the clothes they wore. Within four hours, the Rahat Setu platform matched nearby volunteers who arrived with food packets, blankets, and basic medicine. Her children received warm meals and a safe place to sleep at the relief camp that same night.",
+    quote:
+      "We lost everything in the fire. But within hours, volunteers arrived with food and blankets. My children slept warm that night. I cannot thank them enough.",
+    location: {
+      lat: 26.891,
+      lng: 80.961,
+      address: "Vikas Nagar relief camp",
+      city: "Lucknow",
+      state: "Uttar Pradesh",
+    },
+    createdAt: "2026-04-19T20:00:00.000Z",
+  },
+  {
+    id: "story-flood-suresh",
+    crisisId: "kerala-flood-relief",
+    personName: "Suresh Nair",
+    personAge: 52,
+    narrative:
+      "Suresh and his family were trapped on the first floor of their home as floodwaters rose past the ground level. The Rahat Setu platform identified a boat operator, Aneesh, who was 3.2 km away and immediately available. Aneesh reached Suresh's colony within 40 minutes and evacuated his family along with three neighboring households to the dry staging area at the community temple.",
+    quote:
+      "The water rose so fast. Aneesh arrived with his boat just in time. He rescued our family and three neighbors. We owe our lives to the volunteers.",
+    location: {
+      lat: 10.113,
+      lng: 76.349,
+      address: "Aluva riverside colony",
+      city: "Aluva",
+      state: "Kerala",
+    },
+    createdAt: "2026-04-19T12:00:00.000Z",
+  },
+  {
+    id: "story-landslide-lakshmi",
+    crisisId: "hill-landslide-relief",
+    personName: "Lakshmi Sharma",
+    personAge: 67,
+    narrative:
+      "Lakshmi's village was cut off after the landslide destroyed the only access road. With no mobile network and dwindling medical supplies for her husband's chronic condition, the situation was dire. The Rahat Setu platform coordinated a 4x4 vehicle driver who navigated the alternate forest trail to deliver essential medicines, dry food, and a solar-powered radio within 18 hours of the initial alert.",
+    quote:
+      "The road was gone. We thought no one could reach us. Then a 4x4 came through with medical supplies and food. The relief team gave us hope when we had none.",
+    location: {
+      lat: 31.713,
+      lng: 76.931,
+      address: "Mandi upper slope village",
+      city: "Mandi",
+      state: "Himachal Pradesh",
+    },
+    createdAt: "2026-04-19T08:00:00.000Z",
+  },
+];
+
+export const thankYouMedia: ThankYouMedia[] = [
+  {
+    id: "thankyou-001",
+    crisisId: "vikas-nagar-fire-relief",
+    targetUserId: "donor-community-kitchen",
+    videoUrl: "/media/thankyou-fire-relief.mp4",
+    thumbnailUrl: "/media/thankyou-fire-relief-thumb.jpg",
+    title: "Thank you from Vikas Nagar families",
+    message: "Your food donation fed 128 families. Here is a message from the camp.",
+    createdAt: "2026-04-20T12:00:00.000Z",
+  },
+  {
+    id: "thankyou-002",
+    crisisId: "kerala-flood-relief",
+    targetUserId: "donor-river-kitchen",
+    videoUrl: "/media/thankyou-flood-relief.mp4",
+    thumbnailUrl: "/media/thankyou-flood-relief-thumb.jpg",
+    title: "Gratitude from Aluva",
+    message: "The dry rations you donated kept families fed during the worst of the flooding.",
+    createdAt: "2026-04-20T15:00:00.000Z",
+  },
+  {
+    id: "thankyou-003",
+    crisisId: "vikas-nagar-fire-relief",
+    targetUserId: "seed-user-vol-ravi-kumar",
+    videoUrl: "/media/thankyou-volunteer-ravi.mp4",
+    title: "Thank you, Ravi!",
+    message: "Your first-aid work at the camp made a real difference. Watch this message from the families.",
+    createdAt: "2026-04-20T10:30:00.000Z",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Helper query functions for new collections
+// ---------------------------------------------------------------------------
+
+export function getImpactBadgesByUserId(userId: string) {
+  return impactBadges.filter((badge) => badge.userId === userId);
+}
+
+export function getDonationsByDonorId(donorId: string) {
+  return donations.filter((donation) => donation.donorId === donorId);
+}
+
+export function getDonationsByCrisisId(crisisId: string) {
+  return donations.filter((donation) => donation.crisisId === crisisId);
+}
+
+export function getDonationTimelineByDonationId(donationId: string) {
+  return donationTimelineSteps
+    .filter((step) => step.donationId === donationId)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+export function getCrisisImpactMetricsByCrisisId(crisisId: string) {
+  return crisisImpactMetrics.filter((metric) => metric.crisisId === crisisId);
+}
+
+export function getStorySpotlightsByCrisisId(crisisId: string) {
+  return storySpotlights.filter((story) => story.crisisId === crisisId);
+}
+
+export function getThankYouMediaByUserId(userId: string) {
+  return thankYouMedia.filter((media) => media.targetUserId === userId);
+}
+
+export function getWallOfHopeEntries() {
+  return wallOfHopeEntries.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
+import { SkillTagSelector } from "@/components/SkillTagSelector";
 import { useToast } from "@/components/ToastProvider";
 import {
   buildUserProfileData,
@@ -16,6 +17,7 @@ import type {
   DonorHelpType,
   RegisterFormValues,
   UserRole,
+  VolunteerSkillTag,
 } from "@/types";
 
 const inputClassName =
@@ -132,6 +134,23 @@ export default function RegisterPage() {
         [field]: value,
       },
     }));
+  }
+
+  function toggleVolunteerSkillTag(tag: VolunteerSkillTag) {
+    clearStatus();
+    setForm((current) => {
+      const nextTags = current.volunteer.skillTags.includes(tag)
+        ? current.volunteer.skillTags.filter((entry) => entry !== tag)
+        : [...current.volunteer.skillTags, tag];
+
+      return {
+        ...current,
+        volunteer: {
+          ...current.volunteer,
+          skillTags: nextTags,
+        },
+      };
+    });
   }
 
   function toggleDonorHelpType(type: DonorHelpType) {
@@ -420,6 +439,13 @@ export default function RegisterPage() {
                     required
                   />
                 </label>
+
+                <SkillTagSelector
+                  selected={form.volunteer.skillTags}
+                  onChange={(tags) => updateVolunteerField("skillTags", tags)}
+                  label="Professional skill tags"
+                  maxTags={6}
+                />
               </div>
             ) : null}
 
@@ -527,7 +553,12 @@ export default function RegisterPage() {
                     ? form.ngo.focusAreas || "NGO focus areas not added yet."
                     : null}
                   {form.role === "volunteer"
-                    ? form.volunteer.skills || "Volunteer skills not added yet."
+                    ? (
+                        form.volunteer.skills +
+                        (form.volunteer.skillTags.length > 0
+                          ? ` | Tags: ${form.volunteer.skillTags.join(", ")}`
+                          : "")
+                      ) || "Volunteer skills not added yet."
                     : null}
                   {form.role === "donor"
                     ? form.donor.helpTypes.join(", ") ||

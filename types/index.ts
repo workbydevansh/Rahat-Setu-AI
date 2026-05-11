@@ -84,6 +84,8 @@ export interface VolunteerProfile {
   distanceKm?: number;
   responseRate?: string;
   completedTasks?: number;
+  skillTags?: VolunteerSkillTag[];
+  notificationPreferences?: VolunteerNotificationPreferences;
   createdAt: string;
   updatedAt: string;
   status: UserProfileStatus;
@@ -356,6 +358,7 @@ export interface VolunteerRegistrationFields {
   availability: VolunteerAvailabilityStatus;
   assets: string;
   emergencyRadius: string;
+  skillTags: VolunteerSkillTag[];
 }
 
 export interface DonorRegistrationFields {
@@ -495,3 +498,181 @@ export interface CrisisReportClassification {
   safetyWarning: string;
   requiresVerification: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Impact Passport — Gamified user badges
+// ---------------------------------------------------------------------------
+
+export type BadgeType =
+  | "first_donation"
+  | "repeat_donor"
+  | "crisis_responder"
+  | "resource_hero"
+  | "community_builder"
+  | "milestone_10k"
+  | "early_supporter";
+
+export type BadgeTier = "bronze" | "silver" | "gold" | "platinum";
+
+export interface ImpactBadge {
+  id: string;
+  userId: string;
+  type: BadgeType;
+  crisisId?: string;
+  title: string;
+  description: string;
+  icon: string;
+  tier: BadgeTier;
+  earnedAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+// ---------------------------------------------------------------------------
+// Donation Tracking — Follow Your Dollar
+// ---------------------------------------------------------------------------
+
+export type DonationType = "money" | "supply" | "service";
+
+export type DonationTrackingStatus =
+  | "received"
+  | "purchasing"
+  | "en_route"
+  | "delivered";
+
+export interface Donation {
+  id: string;
+  donorId: string;
+  crisisId: string;
+  amount: number;
+  type: DonationType;
+  optInWallOfHope: boolean;
+  displayName?: string;
+  status: PledgeStatus;
+  timelineStatus: DonationTrackingStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DonationTimelineStep {
+  id: string;
+  donationId: string;
+  step: DonationTrackingStatus;
+  title: string;
+  description?: string;
+  location?: Location;
+  completedAt?: string;
+  createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Wall of Hope — Public social proof feed (never stores amounts)
+// ---------------------------------------------------------------------------
+
+export interface WallOfHopeEntry {
+  id: string;
+  userId: string;
+  displayName: string;
+  role: "donor" | "volunteer";
+  message?: string;
+  crisisTitle?: string;
+  avatarUrl?: string;
+  createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Impact Hub — Crisis transparency metrics and stories
+// ---------------------------------------------------------------------------
+
+export interface CrisisImpactMetric {
+  id: string;
+  crisisId: string;
+  label: string;
+  value: number;
+  unit: string;
+  icon?: string;
+  updatedAt: string;
+}
+
+export interface StorySpotlight {
+  id: string;
+  crisisId: string;
+  personName: string;
+  personAge?: number;
+  narrative?: string;
+  quote: string;
+  imageUrl?: string;
+  location?: Location;
+  createdAt: string;
+}
+
+export interface ThankYouMedia {
+  id: string;
+  crisisId?: string;
+  targetUserId: string;
+  videoUrl: string;
+  thumbnailUrl?: string;
+  title: string;
+  message?: string;
+  createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Volunteer Skill Tags — Skills-based matching enhancement
+// ---------------------------------------------------------------------------
+
+export type VolunteerSkillTag =
+  | "doctor"
+  | "nurse"
+  | "logistics"
+  | "carpenter"
+  | "driver"
+  | "cook"
+  | "teacher"
+  | "engineer"
+  | "translator"
+  | "counselor"
+  | "electrician"
+  | "plumber"
+  | "paramedic"
+  | "boat_operator"
+  | "drone_operator";
+
+export interface VolunteerNotificationPreferences {
+  crisisTypes: CrisisType[];
+  radius: number;
+  enabled: boolean;
+}
+
+export const VOLUNTEER_SKILL_TAG_LABELS: Record<VolunteerSkillTag, string> = {
+  doctor: "Doctor",
+  nurse: "Nurse",
+  logistics: "Logistics",
+  carpenter: "Carpenter",
+  driver: "Driver",
+  cook: "Cook",
+  teacher: "Teacher",
+  engineer: "Engineer",
+  translator: "Translator",
+  counselor: "Counselor",
+  electrician: "Electrician",
+  plumber: "Plumber",
+  paramedic: "Paramedic",
+  boat_operator: "Boat Operator",
+  drone_operator: "Drone Operator",
+};
+
+export const BADGE_TIER_ORDER: BadgeTier[] = ["bronze", "silver", "gold", "platinum"];
+
+export const DONATION_TIMELINE_STEPS: DonationTrackingStatus[] = [
+  "received",
+  "purchasing",
+  "en_route",
+  "delivered",
+];
+
+export const DONATION_TIMELINE_LABELS: Record<DonationTrackingStatus, string> = {
+  received: "Fund Received",
+  purchasing: "Supplies Purchased",
+  en_route: "En Route",
+  delivered: "Delivered",
+};

@@ -22,9 +22,11 @@ const iconHtml = (tone: Tone, label: string) => `
 interface LeafletMapProps {
   apiKey: string;
   points: CrisisMapPoint[];
+  /** When provided, clicking a marker fires this callback with the point ID */
+  onMarkerClick?: (pointId: string) => void;
 }
 
-export default function LeafletMap({ apiKey, points }: LeafletMapProps) {
+export default function LeafletMap({ apiKey, points, onMarkerClick }: LeafletMapProps) {
   const validPoints = points.filter(p => p.location.lat !== 0 || p.location.lng !== 0);
   const center: [number, number] = validPoints.length > 0 
     ? [validPoints[0].location.lat, validPoints[0].location.lng]
@@ -44,12 +46,25 @@ export default function LeafletMap({ apiKey, points }: LeafletMapProps) {
             iconSize: [120, 40],
             iconAnchor: [60, 20],
           });
+
+          const eventHandlers = onMarkerClick
+            ? { click: () => onMarkerClick(point.id) }
+            : undefined;
+
           return (
-            <Marker key={point.id} position={[point.location.lat, point.location.lng]} icon={icon}>
+            <Marker
+              key={point.id}
+              position={[point.location.lat, point.location.lng]}
+              icon={icon}
+              eventHandlers={eventHandlers}
+            >
               {point.detail && (
                 <Popup>
                   <div className="text-sm font-semibold text-gray-900">{point.label}</div>
                   <div className="text-xs text-gray-600 mt-1">{point.detail}</div>
+                  {onMarkerClick ? (
+                    <div className="mt-2 text-[10px] font-medium text-blue-600">Click pin to view impact →</div>
+                  ) : null}
                 </Popup>
               )}
             </Marker>

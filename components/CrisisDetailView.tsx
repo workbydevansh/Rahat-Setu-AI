@@ -6,6 +6,7 @@ import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { CrisisImpactDashboard } from "@/components/CrisisImpactDashboard";
 import { CrisisMap, type CrisisMapPoint } from "@/components/CrisisMap";
+import { SkillFilterPanel } from "@/components/SkillFilterPanel";
 import { useToast } from "@/components/ToastProvider";
 import { ResourceCard } from "@/components/ResourceCard";
 import { TaskCard } from "@/components/TaskCard";
@@ -1196,23 +1197,21 @@ export function CrisisDetailView({
             </div>
             <Badge tone="info">Active Responders</Badge>
           </div>
-          <div className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-            {getVolunteersByCrisisId(crisis.id).map(vol => (
-              <div key={vol.id} className="rounded-[24px] border border-border bg-white/85 p-4 shadow-[0_12px_24px_rgba(17,36,58,0.06)]">
-                <p className="text-lg font-semibold text-command">{vol.name}</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {vol.skills.map(skill => (
-                    <Badge key={skill} tone="neutral" caps={false}>{skill}</Badge>
-                  ))}
-                  {vol.assets?.map(asset => (
-                    <Badge key={asset} tone="warn" caps={false}>{asset}</Badge>
-                  ))}
-                </div>
-              </div>
-            ))}
-            {getVolunteersByCrisisId(crisis.id).length === 0 && (
-              <p className="text-sm text-command-soft/78">No volunteers currently assigned.</p>
-            )}
+          <div className="mt-6">
+            <SkillFilterPanel
+              volunteers={getVolunteersByCrisisId(crisis.id)}
+              onSendNotification={(volunteers, tags) => {
+                const tagLabels = tags
+                  .map((tag) => tag.replace(/_/g, " "))
+                  .join(", ");
+                pushToast({
+                  title: "Notification queued",
+                  description: `Targeted crisis alert queued for ${volunteers.length} volunteer${volunteers.length !== 1 ? "s" : ""} with tags: ${tagLabels}.`,
+                  tone: "safe",
+                  durationMs: 5000,
+                });
+              }}
+            />
           </div>
         </section>
       )}

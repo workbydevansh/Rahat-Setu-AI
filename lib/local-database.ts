@@ -1,19 +1,31 @@
 import {
   activeCrises,
   certificates as seedCertificates,
+  crisisImpactMetrics as seedCrisisImpactMetrics,
+  donations as seedDonations,
+  donationTimelineSteps as seedDonationTimelineSteps,
   getAllNGOProfiles,
+  impactBadges as seedImpactBadges,
   ngoRecentMatches,
   resourceNeeds as seedResourceNeeds,
   resourcePledges as seedResourcePledges,
+  storySpotlights as seedStorySpotlights,
   tasks as seedTasks,
+  thankYouMedia as seedThankYouMedia,
   volunteers as seedVolunteers,
+  wallOfHopeEntries as seedWallOfHopeEntries,
 } from "@/data/mock-data";
 import type {
   Certificate,
   Crisis,
   CrisisCreateData,
+  CrisisImpactMetric,
   CrisisStatus,
   DashboardStat,
+  Donation,
+  DonationTrackingStatus,
+  DonationTimelineStep,
+  ImpactBadge,
   Location,
   MoneyDonationPledgeCreateData,
   ReliefTask,
@@ -22,13 +34,16 @@ import type {
   ResourceNeedStatus,
   ResourcePledge,
   ResourcePledgeCreateData,
+  StorySpotlight,
   TaskCreateData,
   TaskStatus,
+  ThankYouMedia,
   UserProfile,
   UserProfileData,
   VolunteerMatch,
   VolunteerMatchStatus,
   VolunteerProfile,
+  WallOfHopeEntry,
 } from "@/types";
 
 const DATABASE_KEY = "rahatsetu.local.database.v2";
@@ -60,6 +75,13 @@ export interface LocalDatabaseSnapshot {
   resourcePledges: ResourcePledge[];
   matches: VolunteerMatch[];
   certificates: Certificate[];
+  impactBadges: ImpactBadge[];
+  donations: Donation[];
+  donationTimelineSteps: DonationTimelineStep[];
+  wallOfHopeEntries: WallOfHopeEntry[];
+  crisisImpactMetrics: CrisisImpactMetric[];
+  storySpotlights: StorySpotlight[];
+  thankYouMedia: ThankYouMedia[];
   activityLog: LocalDatabaseEvent[];
   authAccounts: Array<{
     uid: string;
@@ -282,6 +304,13 @@ function createSeedDatabase(): LocalDatabaseSnapshot {
     resourcePledges: clone(seedResourcePledges),
     matches: clone(ngoRecentMatches),
     certificates: clone(seedCertificates),
+    impactBadges: clone(seedImpactBadges),
+    donations: clone(seedDonations),
+    donationTimelineSteps: clone(seedDonationTimelineSteps),
+    wallOfHopeEntries: clone(seedWallOfHopeEntries),
+    crisisImpactMetrics: clone(seedCrisisImpactMetrics),
+    storySpotlights: clone(seedStorySpotlights),
+    thankYouMedia: clone(seedThankYouMedia),
     activityLog: seedActivity(),
     authAccounts: [
       {
@@ -321,6 +350,13 @@ function readDatabase() {
       resourcePledges: parsed.resourcePledges ?? seed.resourcePledges,
       matches: parsed.matches ?? seed.matches,
       certificates: parsed.certificates ?? seed.certificates,
+      impactBadges: parsed.impactBadges ?? seed.impactBadges,
+      donations: parsed.donations ?? seed.donations,
+      donationTimelineSteps: parsed.donationTimelineSteps ?? seed.donationTimelineSteps,
+      wallOfHopeEntries: parsed.wallOfHopeEntries ?? seed.wallOfHopeEntries,
+      crisisImpactMetrics: parsed.crisisImpactMetrics ?? seed.crisisImpactMetrics,
+      storySpotlights: parsed.storySpotlights ?? seed.storySpotlights,
+      thankYouMedia: parsed.thankYouMedia ?? seed.thankYouMedia,
       activityLog: parsed.activityLog ?? seed.activityLog,
       authAccounts: parsed.authAccounts ?? seed.authAccounts,
     };
@@ -1360,4 +1396,298 @@ export async function createLocalVolunteerNotificationPlaceholder(data: {
 
   writeDatabase(database);
   return notification;
+}
+
+// ---------------------------------------------------------------------------
+// Impact Badge CRUD
+// ---------------------------------------------------------------------------
+
+export async function getLocalImpactBadges() {
+  return readDatabase().impactBadges.sort((a, b) =>
+    b.earnedAt.localeCompare(a.earnedAt),
+  );
+}
+
+export async function getLocalImpactBadgesForUser(userId: string) {
+  return readDatabase()
+    .impactBadges.filter((badge) => badge.userId === userId)
+    .sort((a, b) => b.earnedAt.localeCompare(a.earnedAt));
+}
+
+export async function awardLocalImpactBadge(
+  data: Omit<ImpactBadge, "id" | "earnedAt">,
+) {
+  const database = readDatabase();
+  const badge: ImpactBadge = {
+    ...data,
+    id: createId("badge"),
+    earnedAt: nowIso(),
+  };
+
+  database.impactBadges = upsertById(database.impactBadges, badge);
+  recordEvent(database, {
+    collection: "impactBadges",
+    action: "Badge awarded",
+    title: badge.title,
+    description: `${badge.title} (${badge.tier}) awarded to ${badge.userId}.`,
+    actor: badge.userId,
+    crisisId: badge.crisisId,
+    recordId: badge.id,
+    tone: "safe",
+  });
+
+  writeDatabase(database);
+  return badge;
+}
+
+// ---------------------------------------------------------------------------
+// Donation CRUD
+// ---------------------------------------------------------------------------
+
+export async function getLocalDonations() {
+  return readDatabase().donations.sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  );
+}
+
+export async function getLocalDonation(id: string) {
+  return readDatabase().donations.find((d) => d.id === id) ?? null;
+}
+
+export async function getLocalDonationsForDonor(donorId: string) {
+  return readDatabase()
+    .donations.filter((d) => d.donorId === donorId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function getLocalDonationsForCrisis(crisisId: string) {
+  return readDatabase()
+    .donations.filter((d) => d.crisisId === crisisId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function createLocalDonation(
+  data: Omit<Donation, "id" | "createdAt" | "updatedAt">,
+) {
+  const database = readDatabase();
+  const now = nowIso();
+  const donation: Donation = {
+    ...data,
+    id: createId("donation"),
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  database.donations = upsertById(database.donations, donation);
+
+  // Create the initial "received" timeline step automatically
+  const initialStep: DonationTimelineStep = {
+    id: createId("step"),
+    donationId: donation.id,
+    step: "received",
+    title: "Donation received",
+    description: `₹${donation.amount} donation confirmed and recorded.`,
+    completedAt: now,
+    createdAt: now,
+  };
+
+  database.donationTimelineSteps = upsertById(
+    database.donationTimelineSteps,
+    initialStep,
+  );
+
+  // If opted-in, create a WallOfHopeEntry (privacy: never include amounts)
+  if (donation.optInWallOfHope && donation.displayName) {
+    const wallEntry: WallOfHopeEntry = {
+      id: createId("wall"),
+      userId: donation.donorId,
+      displayName: donation.displayName,
+      role: "donor",
+      crisisTitle:
+        database.crises.find((c) => c.id === donation.crisisId)?.title,
+      createdAt: now,
+    };
+
+    database.wallOfHopeEntries = upsertById(
+      database.wallOfHopeEntries,
+      wallEntry,
+    );
+  }
+
+  recordEvent(database, {
+    collection: "donations",
+    action: "Donation recorded",
+    title: `₹${donation.amount} donation`,
+    description: `Donation of ₹${donation.amount} recorded for ${donation.crisisId}.`,
+    actor: donation.donorId,
+    crisisId: donation.crisisId,
+    recordId: donation.id,
+    amount: donation.amount,
+    tone: "safe",
+  });
+
+  writeDatabase(database);
+  return donation;
+}
+
+export async function updateLocalDonationTimelineStatus(
+  donationId: string,
+  status: DonationTrackingStatus,
+  stepTitle: string,
+  stepDescription?: string,
+  stepLocation?: Location,
+) {
+  const database = readDatabase();
+  const now = nowIso();
+  const donation = database.donations.find((d) => d.id === donationId);
+
+  if (!donation) {
+    throw new Error("Donation not found.");
+  }
+
+  donation.timelineStatus = status;
+  donation.updatedAt = now;
+  database.donations = upsertById(database.donations, donation);
+
+  const step: DonationTimelineStep = {
+    id: createId("step"),
+    donationId,
+    step: status,
+    title: stepTitle,
+    description: stepDescription,
+    location: stepLocation,
+    completedAt: now,
+    createdAt: now,
+  };
+
+  database.donationTimelineSteps = upsertById(
+    database.donationTimelineSteps,
+    step,
+  );
+
+  recordEvent(database, {
+    collection: "donationTimelineSteps",
+    action: `Donation ${status}`,
+    title: stepTitle,
+    description: stepDescription ?? `Donation moved to ${status}.`,
+    crisisId: donation.crisisId,
+    recordId: step.id,
+    tone: status === "delivered" ? "safe" : "info",
+  });
+
+  writeDatabase(database);
+  return { donation, step };
+}
+
+// ---------------------------------------------------------------------------
+// Donation Timeline Steps (read-only, steps are created via donation actions)
+// ---------------------------------------------------------------------------
+
+export async function getLocalDonationTimelineSteps(donationId: string) {
+  return readDatabase()
+    .donationTimelineSteps.filter((s) => s.donationId === donationId)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+// ---------------------------------------------------------------------------
+// Wall of Hope CRUD (privacy-safe — never stores amounts)
+// ---------------------------------------------------------------------------
+
+export async function getLocalWallOfHopeEntries() {
+  return readDatabase().wallOfHopeEntries.sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  );
+}
+
+export async function createLocalWallOfHopeEntry(
+  data: Omit<WallOfHopeEntry, "id" | "createdAt">,
+) {
+  const database = readDatabase();
+  const entry: WallOfHopeEntry = {
+    ...data,
+    id: createId("wall"),
+    createdAt: nowIso(),
+  };
+
+  database.wallOfHopeEntries = upsertById(database.wallOfHopeEntries, entry);
+  writeDatabase(database);
+  return entry;
+}
+
+// ---------------------------------------------------------------------------
+// Crisis Impact Metrics CRUD
+// ---------------------------------------------------------------------------
+
+export async function getLocalCrisisImpactMetrics(crisisId: string) {
+  return readDatabase().crisisImpactMetrics.filter(
+    (m) => m.crisisId === crisisId,
+  );
+}
+
+export async function upsertLocalCrisisImpactMetric(
+  data: Omit<CrisisImpactMetric, "id" | "updatedAt"> & { id?: string },
+) {
+  const database = readDatabase();
+  const metric: CrisisImpactMetric = {
+    ...data,
+    id: data.id ?? createId("metric"),
+    updatedAt: nowIso(),
+  };
+
+  database.crisisImpactMetrics = upsertById(
+    database.crisisImpactMetrics,
+    metric,
+  );
+  writeDatabase(database);
+  return metric;
+}
+
+// ---------------------------------------------------------------------------
+// Story Spotlights CRUD
+// ---------------------------------------------------------------------------
+
+export async function getLocalStorySpotlights(crisisId: string) {
+  return readDatabase()
+    .storySpotlights.filter((s) => s.crisisId === crisisId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function createLocalStorySpotlight(
+  data: Omit<StorySpotlight, "id" | "createdAt">,
+) {
+  const database = readDatabase();
+  const story: StorySpotlight = {
+    ...data,
+    id: createId("story"),
+    createdAt: nowIso(),
+  };
+
+  database.storySpotlights = upsertById(database.storySpotlights, story);
+  writeDatabase(database);
+  return story;
+}
+
+// ---------------------------------------------------------------------------
+// Thank You Media CRUD
+// ---------------------------------------------------------------------------
+
+export async function getLocalThankYouMediaForUser(userId: string) {
+  return readDatabase()
+    .thankYouMedia.filter((m) => m.targetUserId === userId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function createLocalThankYouMedia(
+  data: Omit<ThankYouMedia, "id" | "createdAt">,
+) {
+  const database = readDatabase();
+  const media: ThankYouMedia = {
+    ...data,
+    id: createId("thankyou"),
+    createdAt: nowIso(),
+  };
+
+  database.thankYouMedia = upsertById(database.thankYouMedia, media);
+  writeDatabase(database);
+  return media;
 }
